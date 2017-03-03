@@ -39,7 +39,14 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
             try {
                 if (xhr.status==200) {
                     //XXX: parse some JSON from the request!
+                    // JSON response idea by
+                    // Torben (http://stackoverflow.com/users/398844/torben)
+                    // from http://stackoverflow.com/a/8416963/2557554 and
+                    // licensed under CC-BY-SA 3.0
+                    // (https://creativecommons.org/licenses/by-sa/3.0/)
+                    var jsonResponse = JSON.parse(xhr.responseText);
                     //XXX: Pass the data to the callback!
+                    callback(jsonResponse);
                 }
             } 
             catch(e) {
@@ -48,8 +55,13 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
         }
     };
     //XXX: POST to a URL
+    xhr.open('POST', url);
     //XXX: set the mimetype and the accept headers!
     // Remember to use application/json !
+    xhr.overrideMimeType('application/json');
+    xhr.setRequestHeader('Accept', 'application/json');
+
+    xhr.send(JSON.stringify(objects));
 }
 
 
@@ -65,7 +77,32 @@ function drawCircle(context,entity) {
         //moveTo(x,y);
         fillStyle = entity["colour"];
         strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
+
+        if(typeof entity["radius"] === "undefined") {
+            arc(x, y, 50, 0, 2.0 * Math.PI, false);
+        } else { // Draw a poke-ball
+            // Draw the large circle and then the little inner circle
+            arc(x, y, entity["radius"], 0, 2.0 * Math.PI, false);
+            arc(x, y, 10, 0, 2.0 * Math.PI, false);
+
+            // Draw the line from the inner circle to the outer circle
+            // Follows the general circle equation to determine the point
+            //
+            // x = center.x + radius * cos(rad angle)
+            // y = center.y + radius * sin(rad angle)
+            //
+            // Where radian angle is between 0 and 2pi, starting from the
+            // 3 o'clock position on a circle.
+            //
+            // Idea based on description by Philipp Jahoda
+            // (http://stackoverflow.com/users/1590502/philipp-jahoda) at
+            // http://stackoverflow.com/a/25929952/2557554 and licensed under
+            // CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
+            moveTo(x + 10 * Math.cos(Math.PI), y + 10 * Math.sin(Math.PI));
+            lineTo(x + entity["radius"] * Math.cos(Math.PI),
+                   y + entity["radius"] * Math.sin(Math.PI));
+        }
+
         stroke();                                
     }
 }
@@ -136,9 +173,11 @@ function getPosition(e) {
 
 function addEntity(entity, data) {
     world[entity] = data;
-    drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just  modified!
 
+    //XXX: Send a XHTML Request that updates the entity you just  modified!
+    sendJSONXMLHTTPRequest("/entity/" + entity, data, function() {
+        drawNextFrame();
+    })
 }
 
 var counter = 0;
@@ -247,21 +286,28 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'cyan',
+                          'radius': 50});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'orange',
+                          'radius': 50});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
+    addEntityWithoutName({'x':x,'y':y,'colour':'white',
                           'radius':10});
 });
 
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    sendJSONXMLHTTPRequest("/world", null, function(data) {
+        world = data;
+        drawNextFrame();
+    });
+
     drawFrame();
 }
 
