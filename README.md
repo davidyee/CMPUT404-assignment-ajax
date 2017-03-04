@@ -38,3 +38,8 @@ Sources
   Philipp Jahoda (http://stackoverflow.com/users/1590502/philipp-jahoda) at
   http://stackoverflow.com/a/25929952/2557554 and licensed under
   CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
+
+* Star drawing code based on code written by
+  markE (http://stackoverflow.com/users/411591/marke) at
+  http://stackoverflow.com/a/25840319/2557554 and licensed under
+  CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
